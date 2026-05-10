@@ -1,0 +1,5 @@
+module.exports = {
+  MATCH_INTERVAL: 120000,
+  MATCH_SIZE: 20,
+  MIN_REAL_PLAYERS: 3
+};
