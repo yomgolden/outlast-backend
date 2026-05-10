@@ -12,6 +12,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get("/", (req, res) => {
+  res.send("OUTLAST backend is running");
+});
+
 app.use("/auth", authRoutes);
 app.use("/user", userRoutes);
 app.use("/match", matchRoutes);
