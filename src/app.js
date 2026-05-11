@@ -6,6 +6,7 @@ const userRoutes = require("./routes/userRoutes");
 const matchRoutes = require("./routes/matchRoutes");
 const leaderboardRoutes = require("./routes/leaderboardRoutes");
 const shopRoutes = require("./routes/shopRoutes");
+const simulationRoutes = require("./routes/simulationRoutes");
 
 const app = express();
 
@@ -21,5 +22,6 @@ app.use("/user", userRoutes);
 app.use("/match", matchRoutes);
 app.use("/leaderboard", leaderboardRoutes);
 app.use("/shop", shopRoutes);
+app.use("/simulation", simulationRoutes);
 
 module.exports = app;
