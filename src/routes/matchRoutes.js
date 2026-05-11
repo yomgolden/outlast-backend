@@ -57,14 +57,21 @@ router.get("/:matchId/status", async (req, res) => {
 
     const now = Date.now();
 
-    const started = now % 2 === 0;
+    let status = "QUEUE";
+
+    if (now % 3 === 0) {
+
+      status = "ENDED";
+
+    } else if (now % 2 === 0) {
+
+      status = "STARTED";
+    }
 
     res.json({
       matchId: req.params.matchId,
-      status: started
-        ? "STARTED"
-        : "QUEUE",
-      round: 1,
+      status,
+      round: Math.floor(Math.random() * 6) + 1,
       alivePlayers: [
         { userId: "Shadow" },
         { userId: "Nova" },
