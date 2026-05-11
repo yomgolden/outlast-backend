@@ -27,6 +27,30 @@ const simulateMatch =
     io = null
   ) => {
 
+    /*
+    ===================================
+    DEBUG LOGS
+    ===================================
+    */
+
+    console.log(
+      "SIMULATE CALLED:",
+      matchId
+    );
+
+    console.log(
+      "ACTIVE EVENTS:",
+      activeEvents.map(
+        e => e.eventId
+      )
+    );
+
+    /*
+    ===================================
+    FIND MATCH
+    ===================================
+    */
+
     const match =
       activeEvents.find(
         e =>
@@ -34,20 +58,51 @@ const simulateMatch =
           matchId
       );
 
+    console.log(
+      "MATCH FOUND:",
+      match
+    );
+
+    /*
+    ===================================
+    MATCH CHECK
+    ===================================
+    */
+
     if (!match) {
+
+      console.log(
+        "MATCH NOT FOUND ERROR"
+      );
 
       throw new Error(
         "Match not found"
       );
     }
 
+    /*
+    ===================================
+    ALREADY ENDED
+    ===================================
+    */
+
     if (
       match.status ===
       "ENDED"
     ) {
 
+      console.log(
+        "MATCH ALREADY ENDED"
+      );
+
       return match;
     }
+
+    /*
+    ===================================
+    RESET MATCH
+    ===================================
+    */
 
     match.feed = [];
 
@@ -56,10 +111,15 @@ const simulateMatch =
     let alivePlayers =
       [...match.players];
 
+    console.log(
+      "PLAYERS BEFORE BOTS:",
+      alivePlayers.length
+    );
+
     /*
-    ================================
+    ===================================
     FILL WITH BOTS
-    ================================
+    ===================================
     */
 
     if (
@@ -71,6 +131,11 @@ const simulateMatch =
         MAX_PLAYERS -
         alivePlayers.length;
 
+      console.log(
+        "ADDING BOTS:",
+        botsNeeded
+      );
+
       const bots =
         createBots(
           botsNeeded
@@ -81,10 +146,15 @@ const simulateMatch =
       );
     }
 
+    console.log(
+      "TOTAL PLAYERS:",
+      alivePlayers.length
+    );
+
     /*
-    ================================
+    ===================================
     RESET PLAYERS
-    ================================
+    ===================================
     */
 
     alivePlayers =
@@ -101,15 +171,26 @@ const simulateMatch =
     match.status =
       "STARTED";
 
+    /*
+    ===================================
+    ROUNDS
+    ===================================
+    */
+
     const rounds =
       randomNumber(5, 6);
+
+    console.log(
+      "TOTAL ROUNDS:",
+      rounds
+    );
 
     const placements = [];
 
     /*
-    ================================
-    MATCH ROUNDS
-    ================================
+    ===================================
+    MATCH LOOP
+    ===================================
     */
 
     for (
@@ -118,17 +199,26 @@ const simulateMatch =
       round++
     ) {
 
+      console.log(
+        "ROUND START:",
+        round
+      );
+
       if (
         alivePlayers.length <= 3
       ) {
+
+        console.log(
+          "ENDING EARLY - ONLY 3 LEFT"
+        );
 
         break;
       }
 
       /*
-      ================================
-      ROUND START
-      ================================
+      ===================================
+      ROUND START EVENT
+      ===================================
       */
 
       const roundStart = {
@@ -163,9 +253,9 @@ const simulateMatch =
       );
 
       /*
-      ================================
-      NARRATOR EVENT
-      ================================
+      ===================================
+      NARRATOR
+      ===================================
       */
 
       const narratorEvent =
@@ -180,12 +270,17 @@ const simulateMatch =
                 "Yaba",
                 "Mushin",
                 "Ajegunle",
-                "Lagos Island",
+                "Makoko",
                 "Ibadan",
                 "Aba"
               ])
           }
         );
+
+      console.log(
+        "NARRATOR EVENT:",
+        narratorEvent
+      );
 
       if (
         narratorEvent.type ===
@@ -225,9 +320,9 @@ const simulateMatch =
       }
 
       /*
-      ================================
+      ===================================
       ROUND EVENTS
-      ================================
+      ===================================
       */
 
       const eventCount =
@@ -236,19 +331,27 @@ const simulateMatch =
           6
         );
 
+      console.log(
+        "EVENT COUNT:",
+        eventCount
+      );
+
       const eliminated =
         [];
 
       for (
         let i = 0;
-        i <
-        eventCount;
+        i < eventCount;
         i++
       ) {
 
         if (
           alivePlayers.length <= 3
         ) {
+
+          console.log(
+            "STOPPING EVENTS - 3 LEFT"
+          );
 
           break;
         }
@@ -259,12 +362,27 @@ const simulateMatch =
               player.alive
           );
 
+        console.log(
+          "AVAILABLE PLAYERS:",
+          availablePlayers.length
+        );
+
         const victim =
           randomItem(
             availablePlayers
           );
 
+        console.log(
+          "VICTIM:",
+          victim
+        );
+
         if (!victim) {
+
+          console.log(
+            "NO VICTIM FOUND"
+          );
+
           continue;
         }
 
@@ -280,6 +398,17 @@ const simulateMatch =
         if (!killer) {
           killer = victim;
         }
+
+        console.log(
+          "KILLER:",
+          killer
+        );
+
+        /*
+        ===================================
+        EVENT
+        ===================================
+        */
 
         const event =
           EventEngine.generateEvent(
@@ -305,17 +434,22 @@ const simulateMatch =
                   "Yaba",
                   "Mushin",
                   "Ajegunle",
-                  "Lagos Island",
+                  "Makoko",
                   "Ibadan",
                   "Aba"
                 ])
             }
           );
 
+        console.log(
+          "EVENT GENERATED:",
+          event
+        );
+
         /*
-        ================================
+        ===================================
         NON-LETHAL
-        ================================
+        ===================================
         */
 
         if (
@@ -357,9 +491,9 @@ const simulateMatch =
         }
 
         /*
-        ================================
+        ===================================
         ELIMINATION
-        ================================
+        ===================================
         */
 
         victim.alive =
@@ -402,9 +536,9 @@ const simulateMatch =
       }
 
       /*
-      ================================
-      FILTER SURVIVORS
-      ================================
+      ===================================
+      FILTER ALIVE
+      ===================================
       */
 
       alivePlayers =
@@ -413,14 +547,19 @@ const simulateMatch =
             player.alive
         );
 
+      console.log(
+        "PLAYERS LEFT:",
+        alivePlayers.length
+      );
+
       placements.unshift(
         ...eliminated
       );
 
       /*
-      ================================
+      ===================================
       ROUND SUMMARY
-      ================================
+      ===================================
       */
 
       const summary = {
@@ -437,22 +576,12 @@ const simulateMatch =
         summary
       );
 
-      if (io) {
-
-        io.to(
-          matchId
-        ).emit(
-          "feedUpdate",
-          summary
-        );
-      }
-
       await wait(3000);
 
       /*
-      ================================
-      REMAINING PLAYERS
-      ================================
+      ===================================
+      REMAINING
+      ===================================
       */
 
       const remainText = {
@@ -469,22 +598,6 @@ const simulateMatch =
         remainText
       );
 
-      if (io) {
-
-        io.to(
-          matchId
-        ).emit(
-          "feedUpdate",
-          remainText
-        );
-      }
-
-      /*
-      ================================
-      ROUND PAUSE
-      ================================
-      */
-
       await wait(5000);
 
       match.currentRound =
@@ -492,13 +605,18 @@ const simulateMatch =
     }
 
     /*
-    ================================
-    FINAL SURVIVORS
-    ================================
+    ===================================
+    FINAL PLAYERS
+    ===================================
     */
 
     placements.unshift(
       ...alivePlayers
+    );
+
+    console.log(
+      "FINAL PLACEMENTS:",
+      placements.length
     );
 
     const rewards = {
@@ -510,9 +628,9 @@ const simulateMatch =
     const finalResults = [];
 
     /*
-    ================================
+    ===================================
     REWARDS
-    ================================
+    ===================================
     */
 
     for (
@@ -538,6 +656,11 @@ const simulateMatch =
           120 -
           placement * 4
         );
+
+      console.log(
+        "REWARDING:",
+        player.username
+      );
 
       if (!player.bot) {
 
@@ -580,9 +703,9 @@ const simulateMatch =
     }
 
     /*
-    ================================
+    ===================================
     MATCH END
-    ================================
+    ===================================
     */
 
     match.status =
@@ -601,6 +724,10 @@ const simulateMatch =
 
     match.feed.push(
       endMessage
+    );
+
+    console.log(
+      "MATCH COMPLETE"
     );
 
     if (io) {
