@@ -1,16 +1,15 @@
 const express = require("express");
+
 const router = express.Router();
 
 router.post("/telegram", async (req, res) => {
 
   try {
 
-    const { id, username } = req.body;
+    let { id, username } = req.body;
 
     if (!id) {
-      return res.status(400).json({
-        message: "Telegram ID required"
-      });
+      id = "guest_" + Date.now();
     }
 
     const user = {
