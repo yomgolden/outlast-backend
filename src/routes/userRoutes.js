@@ -1,24 +1,21 @@
+const express = require("express");
+
+const router = express.Router();
+
 router.get("/:userId", async (req, res) => {
 
   try {
 
-    let user = await User.findById(
-      req.params.userId
-    );
-
-    if (!user) {
-
-      user = {
-        _id: req.params.userId,
-        username:
-          "Player_" +
-          req.params.userId.slice(-4),
-        gold: 1000,
-        gems: 50,
-        level: 1,
-        xp: 0
-      };
-    }
+    const user = {
+      _id: req.params.userId,
+      username:
+        "Player_" +
+        req.params.userId.slice(-4),
+      gold: 1000,
+      gems: 50,
+      level: 1,
+      xp: 0
+    };
 
     res.json(user);
 
@@ -31,3 +28,23 @@ router.get("/:userId", async (req, res) => {
   }
 
 });
+
+router.post("/:userId/equip", async (req, res) => {
+
+  try {
+
+    res.json({
+      success: true
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      error: error.message
+    });
+
+  }
+
+});
+
+module.exports = router;
