@@ -1,10 +1,12 @@
 const express = require("express");
+
 const router = express.Router();
 
-const Match = require("../models/Match");
-const User = require("../models/User");
-
-const { joinQueue } = require("../services/matchmaker");
+/*
+========================================
+JOIN MATCH
+========================================
+*/
 
 router.post("/join", async (req, res) => {
 
@@ -43,14 +45,19 @@ router.post("/join", async (req, res) => {
 
 });
 
+/*
+========================================
+MATCH STATUS
+========================================
+*/
+
 router.get("/:matchId/status", async (req, res) => {
 
   try {
 
     const now = Date.now();
 
-    const started =
-      now % 2 === 0;
+    const started = now % 2 === 0;
 
     res.json({
       matchId: req.params.matchId,
@@ -59,9 +66,9 @@ router.get("/:matchId/status", async (req, res) => {
         : "QUEUE",
       round: 1,
       alivePlayers: [
-        { userId: "p1" },
-        { userId: "p2" },
-        { userId: "p3" }
+        { userId: "Shadow" },
+        { userId: "Nova" },
+        { userId: "Viper" }
       ]
     });
 
@@ -75,34 +82,97 @@ router.get("/:matchId/status", async (req, res) => {
 
 });
 
-router.get("/:matchId/feed", async (req, res) => {
-  try {
-    const match = await Match.findById(req.params.matchId);
+/*
+========================================
+MATCH FEED
+========================================
+*/
 
-    res.json(match.feed);
+router.get("/:matchId/feed", async (req, res) => {
+
+  try {
+
+    res.json([
+      {
+        message: "ROUND 1 STARTED"
+      },
+      {
+        message: "Shadow attacked Nova"
+      },
+      {
+        message: "Nova defended successfully"
+      },
+      {
+        message: "Viper disappeared into the shadows"
+      },
+      {
+        message: "3 players eliminated this round"
+      },
+      {
+        message: "ROUND 2 STARTED"
+      },
+      {
+        message: "Shadow attacked Viper"
+      },
+      {
+        message: "Viper failed to survive the round"
+      },
+      {
+        message: "ONLY 1 PLAYER REMAINS"
+      }
+    ]);
 
   } catch (error) {
+
     res.status(500).json({
-      error: error.message
+      message: error.message
     });
+
   }
+
 });
 
+/*
+========================================
+MATCH RESULTS
+========================================
+*/
+
 router.post("/:matchId/result", async (req, res) => {
+
   try {
-    const match = await Match.findById(req.params.matchId);
 
     res.json({
-      status: match.status,
-      rewards: match.rewards,
-      eliminations: match.eliminations
+      results: [
+        {
+          player: "Shadow",
+          placement: 1,
+          goldEarned: 300,
+          xpEarned: 100
+        },
+        {
+          player: "Nova",
+          placement: 2,
+          goldEarned: 200,
+          xpEarned: 80
+        },
+        {
+          player: "Viper",
+          placement: 3,
+          goldEarned: 100,
+          xpEarned: 60
+        }
+      ]
     });
 
   } catch (error) {
+
     res.status(500).json({
-      error: error.message
+      message: error.message
     });
+
   }
+
 });
 
 module.exports = router;
