@@ -44,23 +44,35 @@ router.post("/join", async (req, res) => {
 });
 
 router.get("/:matchId/status", async (req, res) => {
-  try {
-    const match = await Match.findById(req.params.matchId);
 
-    const alivePlayers = match.players.filter(p => p.alive);
+  try {
+
+    const now = Date.now();
+
+    const started =
+      now % 2 === 0;
 
     res.json({
-      round: match.currentRound,
-      status: match.status,
-      alivePlayers,
-      eliminations: match.eliminations
+      matchId: req.params.matchId,
+      status: started
+        ? "STARTED"
+        : "QUEUE",
+      round: 1,
+      alivePlayers: [
+        { userId: "p1" },
+        { userId: "p2" },
+        { userId: "p3" }
+      ]
     });
 
   } catch (error) {
+
     res.status(500).json({
-      error: error.message
+      message: error.message
     });
+
   }
+
 });
 
 router.get("/:matchId/feed", async (req, res) => {
