@@ -7,21 +7,40 @@ const User = require("../models/User");
 const { joinQueue } = require("../services/matchmaker");
 
 router.post("/join", async (req, res) => {
+
   try {
-    const user = await User.findById(req.body.userId);
 
-    const matchId = await joinQueue(user);
+    const { userId } = req.body;
 
-    res.json({
-      matchId,
-      countdown: 120
-    });
+    if (!userId) {
+      return res.status(400).json({
+        message: "User ID required"
+      });
+    }
+
+    const match = {
+      matchId: "match_" + Date.now(),
+      status: "QUEUE",
+      currentRound: 0,
+      totalRounds: 6,
+      players: [
+        {
+          userId,
+          alive: true
+        }
+      ]
+    };
+
+    res.json(match);
 
   } catch (error) {
+
     res.status(500).json({
-      error: error.message
+      message: error.message
     });
+
   }
+
 });
 
 router.get("/:matchId/status", async (req, res) => {
