@@ -1,5 +1,5 @@
-const match =
-  await Match.findById(matchId);
+const activeEvents =
+  require("../data/activeEvents");
 
 const User =
   require("../models/User");
@@ -28,8 +28,10 @@ const simulateMatch =
   ) => {
 
     const match =
-      await Match.findById(
-        matchId
+      activeEvents.find(
+        e =>
+          e.eventId ===
+          matchId
       );
 
     if (!match) {
@@ -58,7 +60,7 @@ const simulateMatch =
     ================================
     FILL WITH BOTS
     ================================
-    /
+    */
 
     if (
       alivePlayers.length <
@@ -79,11 +81,11 @@ const simulateMatch =
       );
     }
 
-    /
+    /*
     ================================
     RESET PLAYERS
     ================================
-    /
+    */
 
     alivePlayers =
       alivePlayers.map(
@@ -99,18 +101,16 @@ const simulateMatch =
     match.status =
       "STARTED";
 
-    await match.save();
-
     const rounds =
       randomNumber(5, 6);
 
     const placements = [];
 
-    /
+    /*
     ================================
     MATCH ROUNDS
     ================================
-    /
+    */
 
     for (
       let round = 1;
@@ -125,18 +125,20 @@ const simulateMatch =
         break;
       }
 
-      /
+      /*
       ================================
       ROUND START
       ================================
-      /
+      */
 
       const roundStart = {
         type:
           "ROUND_START",
 
+        round,
+
         message:
-          ROUND ${round} STARTED
+          `ROUND ${round} STARTED`
       };
 
       match.feed.push(
@@ -160,11 +162,11 @@ const simulateMatch =
         )
       );
 
-      /
+      /*
       ================================
       NARRATOR EVENT
       ================================
-      /
+      */
 
       const narratorEvent =
         EventEngine.generateEvent(
@@ -222,16 +224,16 @@ const simulateMatch =
         );
       }
 
-      /
+      /*
       ================================
-      ROUND ELIMINATIONS
+      ROUND EVENTS
       ================================
-      /
+      */
 
-      const eliminationCount =
+      const eventCount =
         randomNumber(
-          2,
-          5
+          3,
+          6
         );
 
       const eliminated =
@@ -240,7 +242,7 @@ const simulateMatch =
       for (
         let i = 0;
         i <
-        eliminationCount;
+        eventCount;
         i++
       ) {
 
@@ -251,49 +253,33 @@ const simulateMatch =
           break;
         }
 
-        /
-        ================================
-        SELECT VICTIM
-        ================================
-        /
+        const availablePlayers =
+          alivePlayers.filter(
+            player =>
+              player.alive
+          );
 
         const victim =
           randomItem(
-            alivePlayers.filter(
-              player =>
-                player.alive
-            )
+            availablePlayers
           );
 
         if (!victim) {
           continue;
         }
 
-        /
-        ================================
-        SELECT KILLER
-        ================================
-        /
-
         let killer =
           randomItem(
-            alivePlayers.filter(
+            availablePlayers.filter(
               player =>
                 player.userId !==
-                victim.userId &&
-                player.alive
+                victim.userId
             )
           );
 
         if (!killer) {
           killer = victim;
         }
-
-        /
-        ================================
-        GENERATE EVENT
-        ================================
-        /
 
         const event =
           EventEngine.generateEvent(
@@ -326,11 +312,11 @@ const simulateMatch =
             }
           );
 
-        /
+        /*
         ================================
-        NON-LETHAL EVENT
+        NON-LETHAL
         ================================
-        /
+        */
 
         if (
           event.lethal === false
@@ -370,11 +356,11 @@ const simulateMatch =
           continue;
         }
 
-        /
+        /*
         ================================
         ELIMINATION
         ================================
-        /
+        */
 
         victim.alive =
           false;
@@ -415,11 +401,11 @@ const simulateMatch =
         );
       }
 
-      /
+      /*
       ================================
       FILTER SURVIVORS
       ================================
-      /
+      */
 
       alivePlayers =
         alivePlayers.filter(
@@ -431,18 +417,20 @@ const simulateMatch =
         ...eliminated
       );
 
-      /
+      /*
       ================================
       ROUND SUMMARY
       ================================
-      /
+      */
 
       const summary = {
         type:
           "ROUND_SUMMARY",
 
+        round,
+
         message:
-          ${eliminated.length} players eliminated this round
+          `${eliminated.length} players eliminated this round`
       };
 
       match.feed.push(
@@ -461,18 +449,20 @@ const simulateMatch =
 
       await wait(3000);
 
-      /
+      /*
       ================================
       REMAINING PLAYERS
       ================================
-      /
+      */
 
       const remainText = {
         type:
           "REMAINING",
 
+        round,
+
         message:
-          ${alivePlayers.length} PLAYERS REMAIN
+          `${alivePlayers.length} PLAYERS REMAIN`
       };
 
       match.feed.push(
@@ -489,25 +479,23 @@ const simulateMatch =
         );
       }
 
-      /
+      /*
       ================================
       ROUND PAUSE
       ================================
-      /
+      */
 
       await wait(5000);
 
       match.currentRound =
         round;
-
-      await match.save();
     }
 
-    /
+    /*
     ================================
     FINAL SURVIVORS
     ================================
-    /
+    */
 
     placements.unshift(
       ...alivePlayers
@@ -521,11 +509,11 @@ const simulateMatch =
 
     const finalResults = [];
 
-    /
+    /*
     ================================
     REWARDS
     ================================
-    /
+    */
 
     for (
       let i = 0;
@@ -540,11 +528,9 @@ const simulateMatch =
         i + 1;
 
       const gold =
-        (
-          rewards[
-            placement
-          ] || 20
-        );
+        rewards[
+          placement
+        ] || 20;
 
       const xp =
         Math.max(
@@ -593,7 +579,7 @@ const simulateMatch =
       });
     }
 
-    /
+    /*
     ================================
     MATCH END
     ================================
@@ -616,8 +602,6 @@ const simulateMatch =
     match.feed.push(
       endMessage
     );
-
-    await match.save();
 
     if (io) {
 
