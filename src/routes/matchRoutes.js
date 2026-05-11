@@ -20,20 +20,18 @@ router.post("/join", async (req, res) => {
       });
     }
 
-    const match = {
+    res.json({
       matchId: "match_" + Date.now(),
       status: "QUEUE",
-      currentRound: 0,
-      totalRounds: 6,
+      currentRound: 1,
+      totalRounds: 3,
       players: [
         {
           userId,
           alive: true
         }
       ]
-    };
-
-    res.json(match);
+    });
 
   } catch (error) {
 
@@ -57,26 +55,32 @@ router.get("/:matchId/status", async (req, res) => {
 
     const now = Date.now();
 
+    const phase = Math.floor(now / 5000) % 3;
+
     let status = "QUEUE";
 
-    if (now % 3 === 0) {
-
-      status = "ENDED";
-
-    } else if (now % 2 === 0) {
-
+    if (phase === 1) {
       status = "STARTED";
+    }
+
+    if (phase === 2) {
+      status = "ENDED";
     }
 
     res.json({
       matchId: req.params.matchId,
       status,
-      round: Math.floor(Math.random() * 6) + 1,
-      alivePlayers: [
-        { userId: "Shadow" },
-        { userId: "Nova" },
-        { userId: "Viper" }
-      ]
+      round: phase + 1,
+      alivePlayers:
+        status === "ENDED"
+          ? [
+              { userId: "Shadow" }
+            ]
+          : [
+              { userId: "Shadow" },
+              { userId: "Nova" },
+              { userId: "Viper" }
+            ]
     });
 
   } catch (error) {
@@ -111,9 +115,6 @@ router.get("/:matchId/feed", async (req, res) => {
       },
       {
         message: "Viper disappeared into the shadows"
-      },
-      {
-        message: "3 players eliminated this round"
       },
       {
         message: "ROUND 2 STARTED"
