@@ -2,7 +2,8 @@ const express = require("express");
 
 const router = express.Router();
 
-const activeEvents = [];
+const activeEvents =
+  require("../data/activeEvents");
 
 const THEMES = [
   {
