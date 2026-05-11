@@ -14,6 +14,12 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
+  res.json({
+    status: "OUTLAST backend online"
+  });
+});
+
+app.get("/", (req, res) => {
   res.send("OUTLAST backend is running");
 });
 
