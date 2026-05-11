@@ -1,18 +1,27 @@
 [
   {
     "type": "SPIRITUAL",
+    "lethal": true,
     "text": "{victim} heard someone call their name at midnight. They followed the voice into the evil forest and never returned."
   },
   {
     "type": "SPIRITUAL",
+    "lethal": true,
     "text": "{victim} disrespected a masquerade and was immediately cursed with bad luck."
   },
   {
     "type": "SPIRITUAL",
-    "text": "{victim} ate food from a shrine without permission. The gods have taken their life."
+    "lethal": false,
+    "text": "{victim} heard whispers from the shrine but escaped before sunrise."
   },
   {
     "type": "SPIRITUAL",
-    "text": "{victim} entered an abandoned village after sunset. Elders warned them not to go there."
+    "lethal": false,
+    "text": "{victim} escaped after seeing strange footprints around the forest."
+  },
+  {
+    "type": "SPIRITUAL",
+    "lethal": true,
+    "text": "{killer} convinced {victim} to inspect an abandoned shrine alone."
   }
 ]
