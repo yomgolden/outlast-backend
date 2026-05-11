@@ -27,730 +27,213 @@ const simulateMatch =
     io = null
   ) => {
 
-    /*
-    ===================================
-    DEBUG LOGS
-    ===================================
-    */
-
-    console.log(
-      "SIMULATE CALLED:",
-      matchId
-    );
-
-    console.log(
-      "ACTIVE EVENTS:",
-      activeEvents.map(
-        e => e.eventId
-      )
-    );
-
-    /*
-    ===================================
-    FIND MATCH
-    ===================================
-    */
+    console.log("SIMULATE CALLED:", matchId);
+    console.log("ACTIVE EVENTS:", activeEvents.map(e => e.eventId));
 
     const match =
       activeEvents.find(
-        e =>
-          e.eventId ===
-          matchId
+        e => e.eventId === matchId
       );
 
-    console.log(
-      "MATCH FOUND:",
-      match
-    );
-
-    /*
-    ===================================
-    MATCH CHECK
-    ===================================
-    */
+    console.log("MATCH FOUND:", match ? "YES" : "NO");
 
     if (!match) {
-
-      console.log(
-        "MATCH NOT FOUND ERROR"
-      );
-
-      throw new Error(
-        "Match not found"
-      );
+      throw new Error("Match not found");
     }
 
-    /*
-    ===================================
-    ALREADY ENDED
-    ===================================
-    */
-
-    if (
-      match.status ===
-      "ENDED"
-    ) {
-
-      console.log(
-        "MATCH ALREADY ENDED"
-      );
-
+    if (match.status === "ENDED") {
       return match;
     }
 
-    /*
-    ===================================
-    RESET MATCH
-    ===================================
-    */
-
     match.feed = [];
-
     match.eliminations = [];
 
-    let alivePlayers =
-      [...match.players];
+    let alivePlayers = [...match.players];
 
-    console.log(
-      "PLAYERS BEFORE BOTS:",
-      alivePlayers.length
-    );
-
-    /*
-    ===================================
-    FILL WITH BOTS
-    ===================================
-    */
-
-    if (
-      alivePlayers.length <
-      MAX_PLAYERS
-    ) {
-
-      const botsNeeded =
-        MAX_PLAYERS -
-        alivePlayers.length;
-
-      console.log(
-        "ADDING BOTS:",
-        botsNeeded
-      );
-
-      const bots =
-        createBots(
-          botsNeeded
-        );
-
-      alivePlayers.push(
-        ...bots
-      );
+    if (alivePlayers.length < MAX_PLAYERS) {
+      const botsNeeded = MAX_PLAYERS - alivePlayers.length;
+      const bots = createBots(botsNeeded);
+      alivePlayers.push(...bots);
     }
 
-    console.log(
-      "TOTAL PLAYERS:",
-      alivePlayers.length
-    );
+    alivePlayers = alivePlayers.map(player => ({
+      ...player,
+      alive: true
+    }));
 
-    /*
-    ===================================
-    RESET PLAYERS
-    ===================================
-    */
+    match.players = alivePlayers;
+    match.status = "STARTED";
 
-    alivePlayers =
-      alivePlayers.map(
-        player => ({
-          ...player,
-          alive: true
-        })
-      );
-
-    match.players =
-      alivePlayers;
-
-    match.status =
-      "STARTED";
-
-    /*
-    ===================================
-    ROUNDS
-    ===================================
-    */
-
-    const rounds =
-      randomNumber(5, 6);
-
-    console.log(
-      "TOTAL ROUNDS:",
-      rounds
-    );
-
+    const rounds = randomNumber(5, 6);
     const placements = [];
 
-    /*
-    ===================================
-    MATCH LOOP
-    ===================================
-    */
+    for (let round = 1; round <= rounds; round++) {
 
-    for (
-      let round = 1;
-      round <= rounds;
-      round++
-    ) {
-
-      console.log(
-        "ROUND START:",
-        round
-      );
-
-      if (
-        alivePlayers.length <= 3
-      ) {
-
-        console.log(
-          "ENDING EARLY - ONLY 3 LEFT"
-        );
-
-        break;
-      }
-
-      /*
-      ===================================
-      ROUND START EVENT
-      ===================================
-      */
+      if (alivePlayers.length <= 3) break;
 
       const roundStart = {
-        type:
-          "ROUND_START",
-
+        type: "ROUND_START",
         round,
-
-        message:
-          `ROUND ${round} STARTED`
+        aliveCount: alivePlayers.length,
+        message: `ROUND ${round} STARTED`
       };
 
-      match.feed.push(
-        roundStart
-      );
+      match.feed.push(roundStart);
+      if (io) io.to(matchId).emit("feedUpdate", roundStart);
 
-      if (io) {
+      await wait(200);
 
-        io.to(
-          matchId
-        ).emit(
-          "feedUpdate",
-          roundStart
-        );
-      }
+      const narratorEvent = EventEngine.generateEvent({
+        victim: "",
+        killer: "",
+        tool: "",
+        round,
+        location: randomItem([
+          "Yaba", "Mushin", "Ajegunle",
+          "Makoko", "Ibadan", "Aba"
+        ])
+      });
 
-      await wait(
-        randomNumber(
-          2000,
-          3000
-        )
-      );
-
-      /*
-      ===================================
-      NARRATOR
-      ===================================
-      */
-
-      const narratorEvent =
-        EventEngine.generateEvent(
-          {
-            victim: "",
-            killer: "",
-            tool: "",
-            round,
-            location:
-              randomItem([
-                "Yaba",
-                "Mushin",
-                "Ajegunle",
-                "Makoko",
-                "Ibadan",
-                "Aba"
-              ])
-          }
-        );
-
-      console.log(
-        "NARRATOR EVENT:",
-        narratorEvent
-      );
-
-      if (
-        narratorEvent.type ===
-        "NARRATOR"
-      ) {
-
+      if (narratorEvent.type === "NARRATOR") {
         const narratorFeed = {
-          type:
-            "NARRATOR",
-
+          type: "NARRATOR",
           round,
-
-          message:
-            narratorEvent.text
+          aliveCount: alivePlayers.length,
+          message: narratorEvent.text
         };
-
-        match.feed.push(
-          narratorFeed
-        );
-
-        if (io) {
-
-          io.to(
-            matchId
-          ).emit(
-            "feedUpdate",
-            narratorFeed
-          );
-        }
-
-        await wait(
-          randomNumber(
-            2000,
-            3000
-          )
-        );
+        match.feed.push(narratorFeed);
+        if (io) io.to(matchId).emit("feedUpdate", narratorFeed);
+        await wait(200);
       }
 
-      /*
-      ===================================
-      ROUND EVENTS
-      ===================================
-      */
+      const eventCount = randomNumber(3, 6);
+      const eliminated = [];
 
-      const eventCount =
-        randomNumber(
-          3,
-          6
-        );
+      for (let i = 0; i < eventCount; i++) {
 
-      console.log(
-        "EVENT COUNT:",
-        eventCount
-      );
-
-      const eliminated =
-        [];
-
-      for (
-        let i = 0;
-        i < eventCount;
-        i++
-      ) {
-
-        if (
-          alivePlayers.length <= 3
-        ) {
-
-          console.log(
-            "STOPPING EVENTS - 3 LEFT"
-          );
-
-          break;
-        }
+        if (alivePlayers.length <= 3) break;
 
         const availablePlayers =
-          alivePlayers.filter(
-            player =>
-              player.alive
-          );
+          alivePlayers.filter(p => p.alive);
 
-        console.log(
-          "AVAILABLE PLAYERS:",
-          availablePlayers.length
+        const victim = randomItem(availablePlayers);
+        if (!victim) continue;
+
+        let killer = randomItem(
+          availablePlayers.filter(p => p.userId !== victim.userId)
         );
+        if (!killer) killer = victim;
 
-        const victim =
-          randomItem(
-            availablePlayers
-          );
+        const event = EventEngine.generateEvent({
+          victim: victim.username,
+          killer: killer.username,
+          tool: randomItem(["Knife", "Smoke", "Charm", "Juju"]),
+          round,
+          location: randomItem([
+            "Yaba", "Mushin", "Ajegunle",
+            "Makoko", "Ibadan", "Aba"
+          ])
+        });
 
-        console.log(
-          "VICTIM:",
-          victim
-        );
-
-        if (!victim) {
-
-          console.log(
-            "NO VICTIM FOUND"
-          );
-
-          continue;
-        }
-
-        let killer =
-          randomItem(
-            availablePlayers.filter(
-              player =>
-                player.userId !==
-                victim.userId
-            )
-          );
-
-        if (!killer) {
-          killer = victim;
-        }
-
-        console.log(
-          "KILLER:",
-          killer
-        );
-
-        /*
-        ===================================
-        EVENT
-        ===================================
-        */
-
-        const event =
-          EventEngine.generateEvent(
-            {
-              victim:
-                victim.username,
-
-              killer:
-                killer.username,
-
-              tool:
-                randomItem([
-                  "Knife",
-                  "Smoke",
-                  "Charm",
-                  "Juju"
-                ]),
-
-              round,
-
-              location:
-                randomItem([
-                  "Yaba",
-                  "Mushin",
-                  "Ajegunle",
-                  "Makoko",
-                  "Ibadan",
-                  "Aba"
-                ])
-            }
-          );
-
-        console.log(
-          "EVENT GENERATED:",
-          event
-        );
-
-        /*
-        ===================================
-        NON-LETHAL
-        ===================================
-        */
-
-        if (
-          event.lethal === false
-        ) {
-
+        if (event.lethal === false) {
           const harmlessFeed = {
-            type:
-              event.type,
-
+            type: event.type,
             round,
-
-            message:
-              event.text
+            aliveCount: alivePlayers.length,
+            message: event.text
           };
-
-          match.feed.push(
-            harmlessFeed
-          );
-
-          if (io) {
-
-            io.to(
-              matchId
-            ).emit(
-              "feedUpdate",
-              harmlessFeed
-            );
-          }
-
-          await wait(
-            randomNumber(
-              2000,
-              3000
-            )
-          );
-
+          match.feed.push(harmlessFeed);
+          if (io) io.to(matchId).emit("feedUpdate", harmlessFeed);
+          await wait(200);
           continue;
         }
 
-        /*
-        ===================================
-        ELIMINATION
-        ===================================
-        */
-
-        victim.alive =
-          false;
-
-        eliminated.push(
-          victim
-        );
+        victim.alive = false;
+        eliminated.push(victim);
 
         const feedItem = {
-          type:
-            event.type,
-
+          type: event.type,
           round,
-
-          message:
-            event.text
+          aliveCount: alivePlayers.filter(p => p.alive).length,
+          message: event.text
         };
-
-        match.feed.push(
-          feedItem
-        );
-
-        if (io) {
-
-          io.to(
-            matchId
-          ).emit(
-            "feedUpdate",
-            feedItem
-          );
-        }
-
-        await wait(
-          randomNumber(
-            2000,
-            3000
-          )
-        );
+        match.feed.push(feedItem);
+        if (io) io.to(matchId).emit("feedUpdate", feedItem);
+        await wait(200);
       }
 
-      /*
-      ===================================
-      FILTER ALIVE
-      ===================================
-      */
-
-      alivePlayers =
-        alivePlayers.filter(
-          player =>
-            player.alive
-        );
-
-      console.log(
-        "PLAYERS LEFT:",
-        alivePlayers.length
-      );
-
-      placements.unshift(
-        ...eliminated
-      );
-
-      /*
-      ===================================
-      ROUND SUMMARY
-      ===================================
-      */
+      alivePlayers = alivePlayers.filter(p => p.alive);
+      placements.unshift(...eliminated);
 
       const summary = {
-        type:
-          "ROUND_SUMMARY",
-
+        type: "ROUND_SUMMARY",
         round,
-
-        message:
-          `${eliminated.length} players eliminated this round`
+        aliveCount: alivePlayers.length,
+        message: `${eliminated.length} players eliminated this round`
       };
-
-      match.feed.push(
-        summary
-      );
-
-      await wait(3000);
-
-      /*
-      ===================================
-      REMAINING
-      ===================================
-      */
+      match.feed.push(summary);
+      await wait(200);
 
       const remainText = {
-        type:
-          "REMAINING",
-
+        type: "REMAINING",
         round,
-
-        message:
-          `${alivePlayers.length} PLAYERS REMAIN`
+        aliveCount: alivePlayers.length,
+        message: `${alivePlayers.length} PLAYERS REMAIN`
       };
+      match.feed.push(remainText);
+      await wait(200);
 
-      match.feed.push(
-        remainText
-      );
-
-      await wait(5000);
-
-      match.currentRound =
-        round;
+      match.currentRound = round;
     }
 
-    /*
-    ===================================
-    FINAL PLAYERS
-    ===================================
-    */
+    placements.unshift(...alivePlayers);
 
-    placements.unshift(
-      ...alivePlayers
-    );
-
-    console.log(
-      "FINAL PLACEMENTS:",
-      placements.length
-    );
-
-    const rewards = {
-      1: 250,
-      2: 150,
-      3: 100
-    };
-
+    const rewards = { 1: 250, 2: 150, 3: 100 };
     const finalResults = [];
 
-    /*
-    ===================================
-    REWARDS
-    ===================================
-    */
-
-    for (
-      let i = 0;
-      i < placements.length;
-      i++
-    ) {
-
-      const player =
-        placements[i];
-
-      const placement =
-        i + 1;
-
-      const gold =
-        rewards[
-          placement
-        ] || 20;
-
-      const xp =
-        Math.max(
-          20,
-          120 -
-          placement * 4
-        );
-
-      console.log(
-        "REWARDING:",
-        player.username
-      );
+    for (let i = 0; i < placements.length; i++) {
+      const player = placements[i];
+      const placement = i + 1;
+      const gold = rewards[placement] || 20;
+      const xp = Math.max(20, 120 - placement * 4);
 
       if (!player.bot) {
-
-        const user =
-          await User.findById(
-            player.userId
-          );
-
+        const user = await User.findById(player.userId);
         if (user) {
-
-          user.gold +=
-            gold;
-
+          user.gold += gold;
           user.xp += xp;
-
-          if (
-            user.xp >=
-            user.level * 500
-          ) {
-
-            user.level += 1;
-          }
-
+          if (user.xp >= user.level * 500) user.level += 1;
           await user.save();
         }
       }
 
       finalResults.push({
-        player:
-          player.username,
-
+        player: player.username,
         placement,
-
-        goldEarned:
-          gold,
-
-        xpEarned:
-          xp
+        goldEarned: gold,
+        xpEarned: xp
       });
     }
 
-    /*
-    ===================================
-    MATCH END
-    ===================================
-    */
-
-    match.status =
-      "ENDED";
-
-    match.endedAt =
-      new Date();
+    match.status = "ENDED";
+    match.endedAt = new Date();
 
     const endMessage = {
-      type:
-        "MATCH_END",
-
-      message:
-        "MATCH COMPLETE"
+      type: "MATCH_END",
+      aliveCount: 0,
+      message: "MATCH COMPLETE"
     };
+    match.feed.push(endMessage);
 
-    match.feed.push(
-      endMessage
-    );
+    if (io) io.to(matchId).emit("matchEnded", finalResults);
 
-    console.log(
-      "MATCH COMPLETE"
-    );
-
-    if (io) {
-
-      io.to(
-        matchId
-      ).emit(
-        "matchEnded",
-        finalResults
-      );
-    }
+    console.log("MATCH COMPLETE:", matchId);
 
     return {
       matchId,
-
-      feed:
-        match.feed,
-
-      results:
-        finalResults
+      feed: match.feed,
+      results: finalResults
     };
 };
 
-module.exports = {
-  simulateMatch
-};
+module.exports = { simulateMatch };
