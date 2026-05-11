@@ -1,14 +1,27 @@
 [
   {
     "type": "DISASTER",
+    "lethal": true,
     "text": "{victim} was electrocuted by illegal power cables while trying to steal electricity."
   },
   {
     "type": "DISASTER",
+    "lethal": true,
     "text": "{victim} fell into a pothole big enough to swallow a car."
   },
   {
     "type": "DISASTER",
-    "text": "{victim} ignored flood warnings and was swept away during heavy rain."
+    "lethal": false,
+    "text": "{victim} survived the flood by climbing onto a danfo roof."
+  },
+  {
+    "type": "DISASTER",
+    "lethal": false,
+    "text": "{victim} escaped a collapsing building seconds before impact."
+  },
+  {
+    "type": "DISASTER",
+    "lethal": true,
+    "text": "{victim} ignored flood warnings and disappeared during the storm."
   }
 ]
