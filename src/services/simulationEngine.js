@@ -1,404 +1,404 @@
-const Match = require("../models/Match");
-const User = require("../models/User");
+const Match =
+  require("../models/Match");
 
-const ACTIONS = {
-  HIDE: {
-    survival: 0.7,
-    elimination: 0
-  },
+const User =
+  require("../models/User");
 
-  ATTACK: {
-    survival: 0.4,
-    elimination: 0.3
-  },
+const EventEngine =
+  require("./EventEngine");
 
-  DEFEND: {
-    survival: 0.8,
-    elimination: 0
-  },
+const {
+  wait
+} = require("./pacingEngine");
 
-  STEAL: {
-    survival: 0.5,
-    elimination: 0
-  }
-};
+const {
+  randomNumber,
+  randomItem
+} = require("../utils/randomizer");
 
-const PLAYSTYLE_WEIGHTS = {
-  AGGRESSIVE: [
-    { action: "ATTACK", weight: 60 },
-    { action: "HIDE", weight: 20 },
-    { action: "DEFEND", weight: 20 }
-  ],
+const createBots =
+  require("./botGenerator");
 
-  DEFENSIVE: [
-    { action: "DEFEND", weight: 60 },
-    { action: "HIDE", weight: 30 },
-    { action: "ATTACK", weight: 10 }
-  ],
+const MAX_PLAYERS = 20;
 
-  STEALTH: [
-    { action: "HIDE", weight: 70 },
-    { action: "DEFEND", weight: 20 },
-    { action: "ATTACK", weight: 10 }
-  ],
+const simulateMatch =
+  async (
+    matchId,
+    io = null
+  ) => {
 
-  BALANCED: [
-    { action: "HIDE", weight: 25 },
-    { action: "ATTACK", weight: 25 },
-    { action: "DEFEND", weight: 25 },
-    { action: "STEAL", weight: 25 }
-  ]
-};
+    const match =
+      await Match.findById(
+        matchId
+      );
 
-const randomChance = (percent) => {
-  return Math.random() < percent;
-};
-
-const weightedAction = (playstyle = "BALANCED") => {
-  const weights = PLAYSTYLE_WEIGHTS[playstyle];
-
-  const totalWeight = weights.reduce((sum, item) => sum + item.weight, 0);
-
-  let random = Math.random() * totalWeight;
-
-  for (const item of weights) {
-    if (random < item.weight) {
-      return item.action;
+    if (!match) {
+      throw new Error(
+        "Match not found"
+      );
     }
 
-    random -= item.weight;
-  }
+    if (
+      match.status ===
+      "ENDED"
+    ) {
 
-  return "HIDE";
-};
-
-const getToolBonus = (player, action) => {
-  if (!player.equippedTools) return 0;
-
-  if (
-    action === "ATTACK" &&
-    player.equippedTools.includes("Knife")
-  ) {
-    return 0.2;
-  }
-
-  if (
-    action === "DEFEND" &&
-    player.equippedTools.includes("Shield")
-  ) {
-    return 0.2;
-  }
-
-  if (
-    action === "HIDE" &&
-    player.equippedTools.includes("Smoke")
-  ) {
-    return 0.2;
-  }
-
-  return 0;
-};
-
-const generateNarration = ({
-  attacker,
-  target,
-  action,
-  tool
-}) => {
-
-  if (action === "ATTACK") {
-    return `${attacker} attacked ${target}${tool ? ` using ${tool}` : ""}`;
-  }
-
-  if (action === "DEFEND") {
-    return `${attacker} defended successfully`;
-  }
-
-  if (action === "HIDE") {
-    return `${attacker} disappeared into the shadows`;
-  }
-
-  if (action === "STEAL") {
-    return `${attacker} attempted to steal resources`;
-  }
-
-  return `${attacker} survived the round`;
-};
-
-const simulateMatch = async (matchId) => {
-
-  const match = await Match.findById(matchId);
-
-  if (!match) {
-    throw new Error("Match not found");
-  }
-
-  if (match.status === "ENDED") {
-    return match;
-  }
-
-  match.feed = [];
-  match.eliminations = [];
-  match.currentRound = 0;
-  match.status = "STARTED";
-
-  const totalRounds = Math.floor(Math.random() * 2) + 5;
-
-  match.totalRounds = totalRounds;
-
-  let alivePlayers = [...match.players];
-
-  const placementOrder = [];
-
-  for (let round = 1; round <= totalRounds; round++) {
-
-    if (alivePlayers.length <= 3) {
-      break;
+      return match;
     }
 
-    match.currentRound = round;
+    match.feed = [];
 
-    match.feed.push({
-      message: `ROUND ${round} STARTED`
-    });
+    match.eliminations = [];
 
-    const roundEliminations = [];
+    let alivePlayers =
+      [...match.players];
 
-    for (const player of alivePlayers) {
+    if (
+      alivePlayers.length <
+      MAX_PLAYERS
+    ) {
 
-      if (!player.alive) continue;
+      const botsNeeded =
+        MAX_PLAYERS -
+        alivePlayers.length;
 
-      const user =
-        !player.bot
-          ? await User.findById(player.userId)
-          : null;
-
-      const playstyle =
-        user?.playstyle || "BALANCED";
-
-      const equippedTools =
-        user?.equippedTools || [];
-
-      player.equippedTools = equippedTools;
-
-      const action = weightedAction(playstyle);
-
-      const toolBonus = getToolBonus(player, action);
-
-      const actionStats = ACTIONS[action];
-
-      const survivalChance =
-        actionStats.survival + toolBonus;
-
-      const narration = generateNarration({
-        attacker: player.username,
-        target:
-          alivePlayers[
-            Math.floor(Math.random() * alivePlayers.length)
-          ]?.username,
-        action,
-        tool: equippedTools[0]
-      });
-
-      match.feed.push({
-        message: narration
-      });
-
-      if (action === "ATTACK") {
-
-        const targets = alivePlayers.filter(
-          p =>
-            p.userId !== player.userId &&
-            p.alive
+      const bots =
+        createBots(
+          botsNeeded
         );
 
-        if (targets.length > 0) {
-
-          const target =
-            targets[
-              Math.floor(Math.random() * targets.length)
-            ];
-
-          const targetUser =
-            !target.bot
-              ? await User.findById(target.userId)
-              : null;
-
-          const targetPlaystyle =
-            targetUser?.playstyle || "BALANCED";
-
-          const targetAction =
-            weightedAction(targetPlaystyle);
-
-          const attackSuccess =
-            ACTIONS.ATTACK.elimination + toolBonus;
-
-          if (
-            targetAction === "HIDE" &&
-            randomChance(attackSuccess)
-          ) {
-
-            target.alive = false;
-
-            roundEliminations.push(target.username);
-
-            placementOrder.unshift(target);
-
-            match.feed.push({
-              message: `${target.username} was eliminated while hiding`
-            });
-          }
-
-          if (
-            targetAction === "DEFEND" &&
-            !randomChance(survivalChance)
-          ) {
-
-            player.alive = false;
-
-            roundEliminations.push(player.username);
-
-            placementOrder.unshift(player);
-
-            match.feed.push({
-              message: `${player.username} failed attacking a defending player`
-            });
-          }
-        }
-      }
-
-      if (
-        action === "STEAL" &&
-        randomChance(0.4)
-      ) {
-
-        match.feed.push({
-          message: `${player.username} successfully stole supplies`
-        });
-      }
-
-      if (
-        !randomChance(survivalChance)
-      ) {
-
-        if (player.alive) {
-
-          player.alive = false;
-
-          roundEliminations.push(player.username);
-
-          placementOrder.unshift(player);
-
-          match.feed.push({
-            message: `${player.username} failed to survive the round`
-          });
-        }
-      }
-
-      if (
-        randomChance(0.05) &&
-        player.alive
-      ) {
-
-        player.alive = false;
-
-        roundEliminations.push(player.username);
-
-        placementOrder.unshift(player);
-
-        match.feed.push({
-          message: `${player.username} was caught in a random hazard`
-        });
-      }
+      alivePlayers.push(
+        ...bots
+      );
     }
 
-    alivePlayers = alivePlayers.filter(
-      p => p.alive
+    alivePlayers =
+      alivePlayers.map(
+        player => ({
+          ...player,
+          alive: true
+        })
+      );
+
+    match.players =
+      alivePlayers;
+
+    match.status =
+      "STARTED";
+
+    await match.save();
+
+    const rounds =
+      randomNumber(5, 6);
+
+    const placements = [];
+
+    for (
+      let round = 1;
+      round <= rounds;
+      round++
+    ) {
+
+      if (
+        alivePlayers.length <= 3
+      ) {
+        break;
+      }
+
+      const roundStart = {
+        message:
+          `ROUND ${round} STARTED`
+      };
+
+      match.feed.push(
+        roundStart
+      );
+
+      if (io) {
+
+        io.to(
+          matchId
+        ).emit(
+          "feedUpdate",
+          roundStart
+        );
+      }
+
+      await wait(
+        randomNumber(
+          2000,
+          3000
+        )
+      );
+
+      const eliminationCount =
+        randomNumber(
+          2,
+          5
+        );
+
+      const eliminated =
+        [];
+
+      for (
+        let i = 0;
+        i <
+        eliminationCount;
+        i++
+      ) {
+
+        if (
+          alivePlayers.length <= 3
+        ) {
+          break;
+        }
+
+        const victim =
+          randomItem(
+            alivePlayers
+          );
+
+        victim.alive =
+          false;
+
+        eliminated.push(
+          victim
+        );
+
+        const event =
+          EventEngine.generateEvent(
+            {
+              victim:
+                victim.username,
+
+              killer:
+                randomItem(
+                  alivePlayers
+                )?.username,
+
+              tool:
+                randomItem([
+                  "Knife",
+                  "Smoke",
+                  "Charm",
+                  "Juju"
+                ]),
+
+              round,
+
+              location:
+                randomItem([
+                  "Yaba",
+                  "Mushin",
+                  "Ajegunle",
+                  "Lagos Island",
+                  "Ibadan",
+                  "Aba"
+                ])
+            }
+          );
+
+        const feedItem = {
+          message:
+            event.text,
+
+          type:
+            event.type,
+
+          round
+        };
+
+        match.feed.push(
+          feedItem
+        );
+
+        if (io) {
+
+          io.to(
+            matchId
+          ).emit(
+            "feedUpdate",
+            feedItem
+          );
+        }
+
+        await wait(
+          randomNumber(
+            2000,
+            3000
+          )
+        );
+      }
+
+      alivePlayers =
+        alivePlayers.filter(
+          player =>
+            player.alive
+        );
+
+      placements.unshift(
+        ...eliminated
+      );
+
+      const summary = {
+        message:
+          `${eliminated.length} players eliminated this round`
+      };
+
+      match.feed.push(
+        summary
+      );
+
+      if (io) {
+
+        io.to(
+          matchId
+        ).emit(
+          "feedUpdate",
+          summary
+        );
+      }
+
+      await wait(3000);
+
+      const remainText = {
+        message:
+          `${alivePlayers.length} PLAYERS REMAIN`
+      };
+
+      match.feed.push(
+        remainText
+      );
+
+      if (io) {
+
+        io.to(
+          matchId
+        ).emit(
+          "feedUpdate",
+          remainText
+        );
+      }
+
+      await wait(5000);
+
+      match.currentRound =
+        round;
+
+      await match.save();
+    }
+
+    placements.unshift(
+      ...alivePlayers
     );
 
-    match.eliminations.push({
-      round,
-      eliminatedPlayer: roundEliminations.join(", ")
-    });
+    const rewards = {
+      1: 250,
+      2: 150,
+      3: 100
+    };
 
-    match.feed.push({
-      message: `${roundEliminations.length} players eliminated this round`
-    });
+    const finalResults = [];
 
-    if (alivePlayers.length <= 3) {
+    for (
+      let i = 0;
+      i < placements.length;
+      i++
+    ) {
 
-      match.feed.push({
-        message: "ONLY 3 PLAYERS REMAIN"
-      });
+      const player =
+        placements[i];
 
-      break;
-    }
-  }
+      const placement =
+        i + 1;
 
-  const finalPlayers = alivePlayers;
+      const gold =
+        (
+          rewards[
+            placement
+          ] || 20
+        );
 
-  placementOrder.push(...finalPlayers.reverse());
+      const xp =
+        Math.max(
+          20,
+          120 -
+          placement * 4
+        );
 
-  const placements = placementOrder.reverse();
+      if (!player.bot) {
 
-  const rewards = {
-    1: 250,
-    2: 150,
-    3: 100
-  };
+        const user =
+          await User.findById(
+            player.userId
+          );
 
-  const results = [];
+        if (user) {
 
-  for (let i = 0; i < placements.length; i++) {
+          user.gold +=
+            gold;
 
-    const player = placements[i];
+          user.xp += xp;
 
-    const place = i + 1;
+          if (
+            user.xp >=
+            user.level * 500
+          ) {
 
-    let gold = 20;
+            user.level += 1;
+          }
 
-    if (rewards[place]) {
-      gold += rewards[place];
-    }
-
-    const xp = Math.max(10, 100 - (place * 3));
-
-    if (!player.bot) {
-
-      const user = await User.findById(player.userId);
-
-      if (user) {
-
-        user.gold += gold;
-        user.xp += xp;
-
-        if (user.xp >= user.level * 500) {
-          user.level += 1;
+          await user.save();
         }
-
-        await user.save();
       }
+
+      finalResults.push({
+        player:
+          player.username,
+
+        placement,
+
+        goldEarned:
+          gold,
+
+        xpEarned:
+          xp
+      });
     }
 
-    results.push({
-      player: player.username,
-      placement: place,
-      goldEarned: gold,
-      xpEarned: xp
-    });
-  }
+    match.status =
+      "ENDED";
 
-  match.status = "ENDED";
-  match.endedAt = new Date();
+    match.endedAt =
+      new Date();
 
-  await match.save();
+    await match.save();
 
-  return {
-    matchId: match._id,
-    totalRounds,
-    feed: match.feed,
-    results
-  };
+    const endMessage = {
+      message:
+        "MATCH COMPLETE"
+    };
+
+    match.feed.push(
+      endMessage
+    );
+
+    if (io) {
+
+      io.to(
+        matchId
+      ).emit(
+        "matchEnded",
+        finalResults
+      );
+    }
+
+    return {
+      matchId,
+      feed: match.feed,
+      results:
+        finalResults
+    };
 };
 
 module.exports = {
