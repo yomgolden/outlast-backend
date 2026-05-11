@@ -5,6 +5,7 @@ process.on("uncaughtException", (err) => {
 process.on("unhandledRejection", (err) => {
   console.error("UNHANDLED REJECTION:", err);
 });
+
 require("dotenv").config();
 const http = require("http");
 const { Server } = require("socket.io");
