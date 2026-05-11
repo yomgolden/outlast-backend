@@ -1,14 +1,27 @@
 [
   {
     "type": "CHAOS",
-    "text": "{victim} got caught in a market stampede during a fake prophet's miracle crusade."
+    "lethal": true,
+    "text": "{victim} got caught in a market stampede during a fake prophet's crusade."
   },
   {
     "type": "CHAOS",
-    "text": "{victim} was trampled by a crowd fleeing from police raid on the street."
+    "lethal": false,
+    "text": "{victim} escaped the market stampede with only one shoe left."
   },
   {
     "type": "CHAOS",
-    "text": "{victim} disappeared during a blackout as chaos erupted across the city."
+    "lethal": false,
+    "text": "{victim} disappeared briefly during a city blackout but somehow survived."
+  },
+  {
+    "type": "CHAOS",
+    "lethal": true,
+    "text": "{victim} was trampled while crowds fled from sudden gunshots."
+  },
+  {
+    "type": "CHAOS",
+    "lethal": false,
+    "text": "{victim} survived after hiding beneath an abandoned kiosk."
   }
 ]
