@@ -1,5 +1,5 @@
-const Match =
-  require("../models/Match");
+const match =
+  await Match.findById(matchId);
 
 const User =
   require("../models/User");
