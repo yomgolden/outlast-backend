@@ -27,18 +27,36 @@ const createBots = (
 
   const bots = [];
 
-  for (
-    let i = 0;
-    i < count;
-    i++
+  const used =
+    new Set();
+
+  while (
+    bots.length < count
   ) {
+
+    let name =
+      randomItem(
+        botNames
+      );
+
+    while (
+      used.has(name)
+    ) {
+
+      name =
+        randomItem(
+          botNames
+        );
+    }
+
+    used.add(name);
 
     bots.push({
       userId:
-        `bot_${Date.now()}_${i}`,
+        `bot_${Date.now()}_${bots.length}`,
 
       username:
-        randomItem(botNames),
+        name,
 
       bot: true,
 
@@ -57,4 +75,5 @@ const createBots = (
   return bots;
 };
 
-module.exports = createBots;
+module.exports =
+  createBots;
