@@ -1,0 +1,14 @@
+[
+  {
+    "type": "DISASTER",
+    "text": "{victim} was electrocuted by illegal power cables while trying to steal electricity."
+  },
+  {
+    "type": "DISASTER",
+    "text": "{victim} fell into a pothole big enough to swallow a car."
+  },
+  {
+    "type": "DISASTER",
+    "text": "{victim} ignored flood warnings and was swept away during heavy rain."
+  }
+]
