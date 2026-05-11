@@ -1,18 +1,27 @@
 [
   {
     "type": "FUNNY",
+    "lethal": true,
     "text": "{victim} ran from area boys but slipped into an open gutter and vanished."
   },
   {
     "type": "FUNNY",
+    "lethal": true,
     "text": "{victim} was hit by a danfo bus while trying to cross the road. RIP."
   },
   {
     "type": "FUNNY",
-    "text": "{victim} tried to negotiate with an okada rider over price. The rider threw {victim} off the bike."
+    "lethal": false,
+    "text": "{victim} narrowly escaped an okada collision."
   },
   {
     "type": "FUNNY",
-    "text": "{victim} thought suya from a roadside stand was safe. It was not."
+    "lethal": false,
+    "text": "{victim} hid inside a buka toilet until the chaos ended."
+  },
+  {
+    "type": "FUNNY",
+    "lethal": true,
+    "text": "{victim} ate suspicious roadside shawarma and began seeing ancestors."
   }
 ]
