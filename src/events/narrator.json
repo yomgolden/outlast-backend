@@ -1,0 +1,17 @@
+[
+  {
+    "type": "NARRATOR",
+    "lethal": false,
+    "text": "A strange silence spread across the arena."
+  },
+  {
+    "type": "NARRATOR",
+    "lethal": false,
+    "text": "The lights across Mushin suddenly went out."
+  },
+  {
+    "type": "NARRATOR",
+    "lethal": false,
+    "text": "Nobody has heard from the northern district in hours."
+  }
+]
