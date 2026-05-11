@@ -1,14 +1,27 @@
 [
   {
     "type": "STREET",
+    "lethal": true,
     "text": "{victim} was robbed by area boys at gunpoint. They took everything including their shoes."
   },
   {
     "type": "STREET",
-    "text": "{victim} bought food from a roadside vendor and got food poisoning immediately."
+    "lethal": false,
+    "text": "{victim} escaped a street robbery by jumping through a fence."
   },
   {
     "type": "STREET",
-    "text": "{victim} insulted the wrong person in traffic. Bad decision."
+    "lethal": false,
+    "text": "{victim} hid inside a pepper soup joint while gunshots echoed outside."
+  },
+  {
+    "type": "STREET",
+    "lethal": true,
+    "text": "{victim} insulted the wrong driver during traffic. Fatal mistake."
+  },
+  {
+    "type": "STREET",
+    "lethal": false,
+    "text": "{victim} escaped from a police raid with only one slipper left."
   }
 ]
