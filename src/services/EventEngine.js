@@ -1,4 +1,5 @@
 const fs = require("fs");
+
 const path = require("path");
 
 const parseTemplate =
@@ -41,7 +42,9 @@ class EventEngine {
       const parsed =
         JSON.parse(raw);
 
-      this.events.push(...parsed);
+      this.events.push(
+        ...parsed
+      );
     });
   }
 
@@ -54,12 +57,12 @@ class EventEngine {
   }) {
 
     const event =
-      randomItem(this.events);
+      randomItem(
+        this.events
+      );
 
-    return {
-      type: event.type,
-
-      text: parseTemplate(
+    const parsedText =
+      parseTemplate(
         event.text,
         {
           victim,
@@ -68,7 +71,18 @@ class EventEngine {
           round,
           location
         }
-      )
+      );
+
+    return {
+
+      type:
+        event.type,
+
+      lethal:
+        event.lethal,
+
+      text:
+        parsedText
     };
   }
 }
