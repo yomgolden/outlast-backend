@@ -1,19 +1,12 @@
 const express = require("express");
-
 const router = express.Router();
 
 router.post("/telegram", async (req, res) => {
-
   try {
-
-    let { id, username } = req.body;
-
-    if (!id) {
-      id = "guest_" + Date.now();
-    }
+    const { id, username } = req.body;
 
     const user = {
-      _id: id,
+      _id: id || "guest_" + Date.now(),
       username: username || "Player",
       gold: 1000,
       gems: 50,
@@ -24,13 +17,8 @@ router.post("/telegram", async (req, res) => {
     res.json(user);
 
   } catch (error) {
-
-    res.status(500).json({
-      message: error.message
-    });
-
+    res.status(500).json({ message: error.message });
   }
-
 });
 
 module.exports = router;
