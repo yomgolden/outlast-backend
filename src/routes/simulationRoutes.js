@@ -4,14 +4,21 @@ const express =
 const router =
   express.Router();
 
-const {
-  simulateMatch
-} = require(
-  "../services/simulationEngine"
-);
+/*
+=====================================
+IMPORT ENGINE
+=====================================
+*/
+
+const simulationEngine =
+  require(
+    "../services/simulationEngine"
+  );
 
 const activeEvents =
-  require("../data/activeEvents");
+  require(
+    "../data/activeEvents"
+  );
 
 /*
 =====================================
@@ -72,6 +79,23 @@ router.post(
 
       /*
       =====================================
+      MATCH ALREADY ENDED
+      =====================================
+      */
+
+      if (
+        match.status ===
+        "ENDED"
+      ) {
+
+        return res.json({
+          started: false,
+          ended: true
+        });
+      }
+
+      /*
+      =====================================
       LOCK MATCH
       =====================================
       */
@@ -79,15 +103,19 @@ router.post(
       match.simulating =
         true;
 
+      match.status =
+        "STARTING";
+
       /*
       =====================================
-      START BACKGROUND SIMULATION
+      START IN BACKGROUND
       =====================================
       */
 
-      simulateMatch(
-        matchId
-      )
+      simulationEngine
+        .simulateMatch(
+          matchId
+        )
         .then(() => {
 
           console.log(
@@ -107,11 +135,14 @@ router.post(
 
           match.simulating =
             false;
+
+          match.status =
+            "ERROR";
         });
 
       /*
       =====================================
-      INSTANT RESPONSE
+      RETURN IMMEDIATELY
       =====================================
       */
 
@@ -122,6 +153,7 @@ router.post(
     } catch (error) {
 
       console.error(
+        "START ROUTE ERROR:",
         error
       );
 
@@ -157,6 +189,12 @@ router.get(
             req.params.matchId
         );
 
+      /*
+      =====================================
+      NOT FOUND
+      =====================================
+      */
+
       if (!match) {
 
         return res
@@ -167,13 +205,30 @@ router.get(
           });
       }
 
+      /*
+      =====================================
+      RETURN LIVE DATA
+      =====================================
+      */
+
       res.json({
 
         status:
-          match.status,
+          match.status ||
+
+          "WAITING",
+
+        simulating:
+          match.simulating ||
+          false,
 
         currentRound:
-          match.currentRound || 1,
+          match.currentRound ||
+          1,
+
+        playerCount:
+          match.players
+            ?.length || 0,
 
         feed:
           match.feed || [],
@@ -185,6 +240,7 @@ router.get(
     } catch (error) {
 
       console.error(
+        "FEED ROUTE ERROR:",
         error
       );
 
