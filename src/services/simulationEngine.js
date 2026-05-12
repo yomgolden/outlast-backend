@@ -8,10 +8,6 @@ const EventEngine =
   require("./EventEngine");
 
 const {
-  wait
-} = require("./pacingEngine");
-
-const {
   randomNumber,
   randomItem
 } = require("../utils/randomizer");
@@ -27,213 +23,657 @@ const simulateMatch =
     io = null
   ) => {
 
-    console.log("SIMULATE CALLED:", matchId);
-    console.log("ACTIVE EVENTS:", activeEvents.map(e => e.eventId));
+    console.log(
+      "SIMULATE CALLED:",
+      matchId
+    );
+
+    console.log(
+      "ACTIVE EVENTS:",
+      activeEvents.map(
+        e => e.eventId
+      )
+    );
 
     const match =
       activeEvents.find(
-        e => e.eventId === matchId
+        e =>
+          e.eventId ===
+          matchId
       );
 
-    console.log("MATCH FOUND:", match ? "YES" : "NO");
+    console.log(
+      "MATCH FOUND:",
+      match ? "YES" : "NO"
+    );
 
     if (!match) {
-      throw new Error("Match not found");
+
+      throw new Error(
+        "Match not found"
+      );
     }
 
-    if (match.status === "ENDED") {
+    /*
+    ============================
+    ALREADY ENDED
+    ============================
+    */
+
+    if (
+      match.status ===
+      "ENDED"
+    ) {
+
       return match;
     }
 
+    /*
+    ============================
+    RESET MATCH
+    ============================
+    */
+
     match.feed = [];
+
     match.eliminations = [];
 
-    let alivePlayers = [...match.players];
+    let alivePlayers =
+      [...match.players];
 
-    if (alivePlayers.length < MAX_PLAYERS) {
-      const botsNeeded = MAX_PLAYERS - alivePlayers.length;
-      const bots = createBots(botsNeeded);
-      alivePlayers.push(...bots);
+    /*
+    ============================
+    FILL BOTS
+    ============================
+    */
+
+    if (
+      alivePlayers.length <
+      MAX_PLAYERS
+    ) {
+
+      const botsNeeded =
+        MAX_PLAYERS -
+        alivePlayers.length;
+
+      const bots =
+        createBots(
+          botsNeeded
+        );
+
+      alivePlayers.push(
+        ...bots
+      );
     }
 
-    alivePlayers = alivePlayers.map(player => ({
-      ...player,
-      alive: true
-    }));
+    /*
+    ============================
+    RESET ALIVE STATE
+    ============================
+    */
 
-    match.players = alivePlayers;
-    match.status = "STARTED";
+    alivePlayers =
+      alivePlayers.map(
+        player => ({
+          ...player,
+          alive: true
+        })
+      );
 
-    const rounds = randomNumber(5, 6);
-    const placements = [];
+    match.players =
+      alivePlayers;
 
-    for (let round = 1; round <= rounds; round++) {
+    match.status =
+      "STARTED";
 
-      if (alivePlayers.length <= 3) break;
+    /*
+    ============================
+    MATCH CONFIG
+    ============================
+    */
 
-      const roundStart = {
-        type: "ROUND_START",
-        round,
-        aliveCount: alivePlayers.length,
-        message: `ROUND ${round} STARTED`
-      };
+    const rounds =
+      randomNumber(5, 6);
 
-      match.feed.push(roundStart);
-      if (io) io.to(matchId).emit("feedUpdate", roundStart);
+    const placements =
+      [];
 
-      await wait(200);
+    /*
+    ============================
+    ROUND LOOP
+    ============================
+    */
 
-      const narratorEvent = EventEngine.generateEvent({
-        victim: "",
-        killer: "",
-        tool: "",
-        round,
-        location: randomItem([
-          "Yaba", "Mushin", "Ajegunle",
-          "Makoko", "Ibadan", "Aba"
-        ])
-      });
+    for (
+      let round = 1;
+      round <= rounds;
+      round++
+    ) {
 
-      if (narratorEvent.type === "NARRATOR") {
-        const narratorFeed = {
-          type: "NARRATOR",
-          round,
-          aliveCount: alivePlayers.length,
-          message: narratorEvent.text
-        };
-        match.feed.push(narratorFeed);
-        if (io) io.to(matchId).emit("feedUpdate", narratorFeed);
-        await wait(200);
+      if (
+        alivePlayers.length <= 3
+      ) {
+
+        break;
       }
 
-      const eventCount = randomNumber(3, 6);
-      const eliminated = [];
+      /*
+      ============================
+      ROUND START
+      ============================
+      */
 
-      for (let i = 0; i < eventCount; i++) {
+      const roundStart = {
 
-        if (alivePlayers.length <= 3) break;
+        type:
+          "ROUND_START",
+
+        round,
+
+        aliveCount:
+          alivePlayers.length,
+
+        message:
+          `ROUND ${round} STARTED`
+      };
+
+      match.feed.push(
+        roundStart
+      );
+
+      if (io) {
+
+        io.to(
+          matchId
+        ).emit(
+          "feedUpdate",
+          roundStart
+        );
+      }
+
+      /*
+      ============================
+      NARRATOR EVENT
+      ============================
+      */
+
+      const narratorEvent =
+        EventEngine.generateEvent(
+          {
+            victim: "",
+            killer: "",
+            tool: "",
+            round,
+
+            location:
+              randomItem([
+                "Yaba",
+                "Mushin",
+                "Ajegunle",
+                "Makoko",
+                "Ibadan",
+                "Aba"
+              ])
+          }
+        );
+
+      if (
+        narratorEvent.type ===
+        "NARRATOR"
+      ) {
+
+        const narratorFeed = {
+
+          type:
+            "NARRATOR",
+
+          round,
+
+          aliveCount:
+            alivePlayers.length,
+
+          message:
+            narratorEvent.text
+        };
+
+        match.feed.push(
+          narratorFeed
+        );
+
+        if (io) {
+
+          io.to(
+            matchId
+          ).emit(
+            "feedUpdate",
+            narratorFeed
+          );
+        }
+      }
+
+      /*
+      ============================
+      ROUND EVENTS
+      ============================
+      */
+
+      const eventCount =
+        randomNumber(
+          3,
+          6
+        );
+
+      const eliminated =
+        [];
+
+      for (
+        let i = 0;
+        i < eventCount;
+        i++
+      ) {
+
+        /*
+        ============================
+        REFRESH ALIVE PLAYERS
+        ============================
+        */
 
         const availablePlayers =
-          alivePlayers.filter(p => p.alive);
+          alivePlayers.filter(
+            p => p.alive
+          );
 
-        const victim = randomItem(availablePlayers);
-        if (!victim) continue;
+        if (
+          availablePlayers.length <= 1
+        ) {
 
-        let killer = randomItem(
-          availablePlayers.filter(p => p.userId !== victim.userId)
-        );
-        if (!killer) killer = victim;
+          break;
+        }
 
-        const event = EventEngine.generateEvent({
-          victim: victim.username,
-          killer: killer.username,
-          tool: randomItem(["Knife", "Smoke", "Charm", "Juju"]),
-          round,
-          location: randomItem([
-            "Yaba", "Mushin", "Ajegunle",
-            "Makoko", "Ibadan", "Aba"
-          ])
-        });
+        /*
+        ============================
+        SELECT VICTIM
+        ============================
+        */
 
-        if (event.lethal === false) {
-          const harmlessFeed = {
-            type: event.type,
-            round,
-            aliveCount: alivePlayers.length,
-            message: event.text
-          };
-          match.feed.push(harmlessFeed);
-          if (io) io.to(matchId).emit("feedUpdate", harmlessFeed);
-          await wait(200);
+        const victim =
+          randomItem(
+            availablePlayers
+          );
+
+        if (!victim) {
           continue;
         }
 
-        victim.alive = false;
-        eliminated.push(victim);
+        /*
+        ============================
+        SELECT KILLER
+        ============================
+        */
+
+        const possibleKillers =
+          availablePlayers.filter(
+            p =>
+              p.userId !==
+              victim.userId
+          );
+
+        if (
+          possibleKillers.length === 0
+        ) {
+
+          continue;
+        }
+
+        const killer =
+          randomItem(
+            possibleKillers
+          );
+
+        /*
+        ============================
+        GENERATE EVENT
+        ============================
+        */
+
+        const event =
+          EventEngine.generateEvent(
+            {
+              victim:
+                victim.username,
+
+              killer:
+                killer.username,
+
+              tool:
+                randomItem([
+                  "Knife",
+                  "Smoke",
+                  "Charm",
+                  "Juju"
+                ]),
+
+              round,
+
+              location:
+                randomItem([
+                  "Yaba",
+                  "Mushin",
+                  "Ajegunle",
+                  "Makoko",
+                  "Ibadan",
+                  "Aba"
+                ])
+            }
+          );
+
+        /*
+        ============================
+        NON-LETHAL
+        ============================
+        */
+
+        if (
+          event.lethal === false
+        ) {
+
+          const harmlessFeed = {
+
+            type:
+              event.type,
+
+            round,
+
+            aliveCount:
+              alivePlayers.filter(
+                p => p.alive
+              ).length,
+
+            message:
+              event.text
+          };
+
+          match.feed.push(
+            harmlessFeed
+          );
+
+          if (io) {
+
+            io.to(
+              matchId
+            ).emit(
+              "feedUpdate",
+              harmlessFeed
+            );
+          }
+
+          continue;
+        }
+
+        /*
+        ============================
+        ELIMINATION
+        ============================
+        */
+
+        victim.alive =
+          false;
+
+        eliminated.push(
+          victim
+        );
+
+        const aliveCount =
+          alivePlayers.filter(
+            p => p.alive
+          ).length;
 
         const feedItem = {
-          type: event.type,
+
+          type:
+            event.type,
+
           round,
-          aliveCount: alivePlayers.filter(p => p.alive).length,
-          message: event.text
+
+          aliveCount,
+
+          message:
+            event.text
         };
-        match.feed.push(feedItem);
-        if (io) io.to(matchId).emit("feedUpdate", feedItem);
-        await wait(200);
+
+        match.feed.push(
+          feedItem
+        );
+
+        if (io) {
+
+          io.to(
+            matchId
+          ).emit(
+            "feedUpdate",
+            feedItem
+          );
+        }
       }
 
-      alivePlayers = alivePlayers.filter(p => p.alive);
-      placements.unshift(...eliminated);
+      /*
+      ============================
+      FILTER SURVIVORS
+      ============================
+      */
+
+      alivePlayers =
+        alivePlayers.filter(
+          p => p.alive
+        );
+
+      placements.unshift(
+        ...eliminated
+      );
+
+      /*
+      ============================
+      ROUND SUMMARY
+      ============================
+      */
 
       const summary = {
-        type: "ROUND_SUMMARY",
+
+        type:
+          "ROUND_SUMMARY",
+
         round,
-        aliveCount: alivePlayers.length,
-        message: `${eliminated.length} players eliminated this round`
+
+        aliveCount:
+          alivePlayers.length,
+
+        message:
+          `${eliminated.length} players eliminated this round`
       };
-      match.feed.push(summary);
-      await wait(200);
+
+      match.feed.push(
+        summary
+      );
+
+      /*
+      ============================
+      REMAINING
+      ============================
+      */
 
       const remainText = {
-        type: "REMAINING",
-        round,
-        aliveCount: alivePlayers.length,
-        message: `${alivePlayers.length} PLAYERS REMAIN`
-      };
-      match.feed.push(remainText);
-      await wait(200);
 
-      match.currentRound = round;
+        type:
+          "REMAINING",
+
+        round,
+
+        aliveCount:
+          alivePlayers.length,
+
+        message:
+          `${alivePlayers.length} PLAYERS REMAIN`
+      };
+
+      match.feed.push(
+        remainText
+      );
+
+      match.currentRound =
+        round;
     }
 
-    placements.unshift(...alivePlayers);
+    /*
+    ============================
+    FINAL SURVIVORS
+    ============================
+    */
 
-    const rewards = { 1: 250, 2: 150, 3: 100 };
-    const finalResults = [];
+    placements.unshift(
+      ...alivePlayers
+    );
 
-    for (let i = 0; i < placements.length; i++) {
-      const player = placements[i];
-      const placement = i + 1;
-      const gold = rewards[placement] || 20;
-      const xp = Math.max(20, 120 - placement * 4);
+    /*
+    ============================
+    REWARDS
+    ============================
+    */
+
+    const rewards = {
+      1: 250,
+      2: 150,
+      3: 100
+    };
+
+    const finalResults =
+      [];
+
+    for (
+      let i = 0;
+      i < placements.length;
+      i++
+    ) {
+
+      const player =
+        placements[i];
+
+      const placement =
+        i + 1;
+
+      const gold =
+        rewards[
+          placement
+        ] || 20;
+
+      const xp =
+        Math.max(
+          20,
+          120 -
+          placement * 4
+        );
+
+      /*
+      ============================
+      REAL USER REWARDS
+      ============================
+      */
 
       if (!player.bot) {
-        const user = await User.findById(player.userId);
+
+        const user =
+          await User.findById(
+            player.userId
+          );
+
         if (user) {
-          user.gold += gold;
-          user.xp += xp;
-          if (user.xp >= user.level * 500) user.level += 1;
+
+          user.gold +=
+            gold;
+
+          user.xp +=
+            xp;
+
+          if (
+            user.xp >=
+            user.level * 500
+          ) {
+
+            user.level += 1;
+          }
+
           await user.save();
         }
       }
 
       finalResults.push({
-        player: player.username,
+
+        player:
+          player.username,
+
         placement,
-        goldEarned: gold,
-        xpEarned: xp
+
+        goldEarned:
+          gold,
+
+        xpEarned:
+          xp
       });
     }
 
-    match.status = "ENDED";
-    match.endedAt = new Date();
+    /*
+    ============================
+    MATCH END
+    ============================
+    */
+
+    match.status =
+      "ENDED";
+
+    match.endedAt =
+      new Date();
 
     const endMessage = {
-      type: "MATCH_END",
+
+      type:
+        "MATCH_END",
+
       aliveCount: 0,
-      message: "MATCH COMPLETE"
+
+      message:
+        "MATCH COMPLETE"
     };
-    match.feed.push(endMessage);
 
-    if (io) io.to(matchId).emit("matchEnded", finalResults);
+    match.feed.push(
+      endMessage
+    );
 
-    console.log("MATCH COMPLETE:", matchId);
+    if (io) {
+
+      io.to(
+        matchId
+      ).emit(
+        "matchEnded",
+        finalResults
+      );
+    }
+
+    console.log(
+      "MATCH COMPLETE:",
+      matchId
+    );
 
     return {
+
       matchId,
-      feed: match.feed,
-      results: finalResults
+
+      feed:
+        match.feed,
+
+      results:
+        finalResults
     };
 };
 
-module.exports = { simulateMatch };
+module.exports = {
+  simulateMatch
+};
