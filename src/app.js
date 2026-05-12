@@ -1,8 +1,5 @@
-const express =
-  require("express");
-
-const cors =
-  require("cors");
+const express = require("express");
+const cors = require("cors");
 
 const authRoutes =
   require("./routes/authRoutes");
@@ -22,96 +19,63 @@ const shopRoutes =
 const simulationRoutes =
   require("./routes/simulationRoutes");
 
-const app =
-  express();
+const app = express();
 
 /*
-=================================
-MIDDLEWARE
-=================================
+=====================================
+CORS
+=====================================
 */
 
-app.use(cors());
-
-app.use(
-  express.json({
-    limit: "2mb"
-  })
-);
+app.use(cors({
+  origin: "*",
+  methods: [
+    "GET",
+    "POST",
+    "PUT",
+    "DELETE",
+    "OPTIONS"
+  ],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization"
+  ]
+}));
 
 /*
-=================================
-REQUEST LOGGER
-=================================
+=====================================
+PREFLIGHT
+=====================================
 */
 
-app.use(
-  (
-    req,
-    res,
-    next
-  ) => {
-
-    console.log(
-      `${req.method} ${req.originalUrl}`
-    );
-
-    next();
-  }
-);
+app.options("*", cors());
 
 /*
-=================================
+=====================================
+BODY PARSER
+=====================================
+*/
+
+app.use(express.json());
+
+/*
+=====================================
 HEALTH CHECK
-=================================
+=====================================
 */
 
-app.get(
-  "/health",
-  (
-    req,
-    res
-  ) => {
+app.get("/", (req, res) => {
 
-    res
-      .status(200)
-      .json({
-        status:
-          "healthy",
+  res.json({
+    status: "OUTLAST backend online"
+  });
 
-        uptime:
-          process.uptime(),
-
-        timestamp:
-          Date.now()
-      });
-  }
-);
+});
 
 /*
-=================================
-ROOT
-=================================
-*/
-
-app.get(
-  "/",
-  (
-    req,
-    res
-  ) => {
-
-    res.json({
-      status:
-        "OUTLAST backend online"
-    });
-  }
-);
-
-/*
-=================================
+=====================================
 ROUTES
-=================================
+=====================================
 */
 
 app.use(
@@ -144,54 +108,4 @@ app.use(
   simulationRoutes
 );
 
-/*
-=================================
-404 HANDLER
-=================================
-*/
-
-app.use(
-  (
-    req,
-    res
-  ) => {
-
-    res
-      .status(404)
-      .json({
-        error:
-          "Route not found"
-      });
-  }
-);
-
-/*
-=================================
-GLOBAL ERROR HANDLER
-=================================
-*/
-
-app.use(
-  (
-    err,
-    req,
-    res,
-    next
-  ) => {
-
-    console.error(
-      "SERVER ERROR:",
-      err
-    );
-
-    res
-      .status(500)
-      .json({
-        error:
-          "Internal server error"
-      });
-  }
-);
-
-module.exports =
-  app;
+module.exports = app;
