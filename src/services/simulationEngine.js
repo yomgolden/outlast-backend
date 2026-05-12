@@ -35,6 +35,12 @@ const simulateMatch =
       )
     );
 
+    /*
+    =================================
+    FIND EVENT
+    =================================
+    */
+
     const match =
       activeEvents.find(
         e =>
@@ -55,9 +61,9 @@ const simulateMatch =
     }
 
     /*
-    ============================
+    =================================
     ALREADY ENDED
-    ============================
+    =================================
     */
 
     if (
@@ -69,9 +75,9 @@ const simulateMatch =
     }
 
     /*
-    ============================
+    =================================
     RESET MATCH
-    ============================
+    =================================
     */
 
     match.feed = [];
@@ -82,9 +88,9 @@ const simulateMatch =
       [...match.players];
 
     /*
-    ============================
-    FILL BOTS
-    ============================
+    =================================
+    ADD BOTS
+    =================================
     */
 
     if (
@@ -107,9 +113,9 @@ const simulateMatch =
     }
 
     /*
-    ============================
+    =================================
     RESET ALIVE STATE
-    ============================
+    =================================
     */
 
     alivePlayers =
@@ -126,22 +132,20 @@ const simulateMatch =
     match.status =
       "STARTED";
 
-    /*
-    ============================
-    MATCH CONFIG
-    ============================
-    */
-
     const rounds =
       randomNumber(5, 6);
 
     const placements =
       [];
 
+    console.log(
+      "MATCH STARTED"
+    );
+
     /*
-    ============================
+    =================================
     ROUND LOOP
-    ============================
+    =================================
     */
 
     for (
@@ -157,10 +161,14 @@ const simulateMatch =
         break;
       }
 
+      console.log(
+        `ROUND ${round}`
+      );
+
       /*
-      ============================
+      =================================
       ROUND START
-      ============================
+      =================================
       */
 
       const roundStart = {
@@ -181,20 +189,10 @@ const simulateMatch =
         roundStart
       );
 
-      if (io) {
-
-        io.to(
-          matchId
-        ).emit(
-          "feedUpdate",
-          roundStart
-        );
-      }
-
       /*
-      ============================
+      =================================
       NARRATOR EVENT
-      ============================
+      =================================
       */
 
       const narratorEvent =
@@ -222,7 +220,7 @@ const simulateMatch =
         "NARRATOR"
       ) {
 
-        const narratorFeed = {
+        match.feed.push({
 
           type:
             "NARRATOR",
@@ -234,27 +232,13 @@ const simulateMatch =
 
           message:
             narratorEvent.text
-        };
-
-        match.feed.push(
-          narratorFeed
-        );
-
-        if (io) {
-
-          io.to(
-            matchId
-          ).emit(
-            "feedUpdate",
-            narratorFeed
-          );
-        }
+        });
       }
 
       /*
-      ============================
-      ROUND EVENTS
-      ============================
+      =================================
+      EVENTS
+      =================================
       */
 
       const eventCount =
@@ -272,12 +256,6 @@ const simulateMatch =
         i++
       ) {
 
-        /*
-        ============================
-        REFRESH ALIVE PLAYERS
-        ============================
-        */
-
         const availablePlayers =
           alivePlayers.filter(
             p => p.alive
@@ -291,9 +269,9 @@ const simulateMatch =
         }
 
         /*
-        ============================
-        SELECT VICTIM
-        ============================
+        =================================
+        VICTIM
+        =================================
         */
 
         const victim =
@@ -306,9 +284,9 @@ const simulateMatch =
         }
 
         /*
-        ============================
-        SELECT KILLER
-        ============================
+        =================================
+        KILLER
+        =================================
         */
 
         const possibleKillers =
@@ -331,9 +309,9 @@ const simulateMatch =
           );
 
         /*
-        ============================
+        =================================
         GENERATE EVENT
-        ============================
+        =================================
         */
 
         const event =
@@ -368,16 +346,16 @@ const simulateMatch =
           );
 
         /*
-        ============================
+        =================================
         NON-LETHAL
-        ============================
+        =================================
         */
 
         if (
           event.lethal === false
         ) {
 
-          const harmlessFeed = {
+          match.feed.push({
 
             type:
               event.type,
@@ -391,29 +369,15 @@ const simulateMatch =
 
             message:
               event.text
-          };
-
-          match.feed.push(
-            harmlessFeed
-          );
-
-          if (io) {
-
-            io.to(
-              matchId
-            ).emit(
-              "feedUpdate",
-              harmlessFeed
-            );
-          }
+          });
 
           continue;
         }
 
         /*
-        ============================
+        =================================
         ELIMINATION
-        ============================
+        =================================
         */
 
         victim.alive =
@@ -428,7 +392,7 @@ const simulateMatch =
             p => p.alive
           ).length;
 
-        const feedItem = {
+        match.feed.push({
 
           type:
             event.type,
@@ -439,27 +403,13 @@ const simulateMatch =
 
           message:
             event.text
-        };
-
-        match.feed.push(
-          feedItem
-        );
-
-        if (io) {
-
-          io.to(
-            matchId
-          ).emit(
-            "feedUpdate",
-            feedItem
-          );
-        }
+        });
       }
 
       /*
-      ============================
+      =================================
       FILTER SURVIVORS
-      ============================
+      =================================
       */
 
       alivePlayers =
@@ -472,12 +422,12 @@ const simulateMatch =
       );
 
       /*
-      ============================
+      =================================
       ROUND SUMMARY
-      ============================
+      =================================
       */
 
-      const summary = {
+      match.feed.push({
 
         type:
           "ROUND_SUMMARY",
@@ -489,19 +439,15 @@ const simulateMatch =
 
         message:
           `${eliminated.length} players eliminated this round`
-      };
-
-      match.feed.push(
-        summary
-      );
+      });
 
       /*
-      ============================
+      =================================
       REMAINING
-      ============================
+      =================================
       */
 
-      const remainText = {
+      match.feed.push({
 
         type:
           "REMAINING",
@@ -513,30 +459,30 @@ const simulateMatch =
 
         message:
           `${alivePlayers.length} PLAYERS REMAIN`
-      };
-
-      match.feed.push(
-        remainText
-      );
+      });
 
       match.currentRound =
         round;
     }
 
     /*
-    ============================
+    =================================
     FINAL SURVIVORS
-    ============================
+    =================================
     */
 
     placements.unshift(
       ...alivePlayers
     );
 
+    console.log(
+      "STARTING REWARDS"
+    );
+
     /*
-    ============================
+    =================================
     REWARDS
-    ============================
+    =================================
     */
 
     const rewards = {
@@ -573,35 +519,51 @@ const simulateMatch =
         );
 
       /*
-      ============================
-      REAL USER REWARDS
-      ============================
+      =================================
+      REAL USER REWARDS ONLY
+      =================================
       */
 
-      if (!player.bot) {
+      if (
+        !player.bot &&
+        player.userId &&
+        typeof player.userId ===
+          "string" &&
+        player.userId.length === 24
+      ) {
 
-        const user =
-          await User.findById(
-            player.userId
-          );
+        try {
 
-        if (user) {
+          const user =
+            await User.findById(
+              player.userId
+            );
 
-          user.gold +=
-            gold;
+          if (user) {
 
-          user.xp +=
-            xp;
+            user.gold +=
+              gold;
 
-          if (
-            user.xp >=
-            user.level * 500
-          ) {
+            user.xp +=
+              xp;
 
-            user.level += 1;
+            if (
+              user.xp >=
+              user.level * 500
+            ) {
+
+              user.level += 1;
+            }
+
+            await user.save();
           }
 
-          await user.save();
+        } catch (err) {
+
+          console.log(
+            "REWARD ERROR:",
+            err.message
+          );
         }
       }
 
@@ -620,10 +582,14 @@ const simulateMatch =
       });
     }
 
+    console.log(
+      "REWARDS COMPLETE"
+    );
+
     /*
-    ============================
+    =================================
     MATCH END
-    ============================
+    =================================
     */
 
     match.status =
@@ -632,7 +598,7 @@ const simulateMatch =
     match.endedAt =
       new Date();
 
-    const endMessage = {
+    match.feed.push({
 
       type:
         "MATCH_END",
@@ -641,21 +607,7 @@ const simulateMatch =
 
       message:
         "MATCH COMPLETE"
-    };
-
-    match.feed.push(
-      endMessage
-    );
-
-    if (io) {
-
-      io.to(
-        matchId
-      ).emit(
-        "matchEnded",
-        finalResults
-      );
-    }
+    });
 
     console.log(
       "MATCH COMPLETE:",
