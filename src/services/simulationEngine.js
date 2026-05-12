@@ -32,6 +32,12 @@ router.post(
         matchId
       } = req.params;
 
+      /*
+      =====================================
+      FIND MATCH
+      =====================================
+      */
+
       const match =
         activeEvents.find(
           e =>
@@ -50,9 +56,9 @@ router.post(
       }
 
       /*
-      ============================
+      =====================================
       ALREADY RUNNING
-      ============================
+      =====================================
       */
 
       if (
@@ -65,18 +71,35 @@ router.post(
       }
 
       /*
-      ============================
-      LOCK
-      ============================
+      =====================================
+      ALREADY ENDED
+      =====================================
+      */
+
+      if (
+        match.status ===
+        "ENDED"
+      ) {
+
+        return res.json({
+          started: false,
+          ended: true
+        });
+      }
+
+      /*
+      =====================================
+      LOCK MATCH
+      =====================================
       */
 
       match.simulating =
         true;
 
       /*
-      ============================
-      START IN BACKGROUND
-      ============================
+      =====================================
+      START BACKGROUND SIMULATION
+      =====================================
       */
 
       simulateMatch(
@@ -101,12 +124,15 @@ router.post(
 
           match.simulating =
             false;
+
+          match.status =
+            "ERROR";
         });
 
       /*
-      ============================
+      =====================================
       INSTANT RESPONSE
-      ============================
+      =====================================
       */
 
       res.json({
@@ -116,6 +142,7 @@ router.post(
     } catch (error) {
 
       console.error(
+        "START ROUTE ERROR:",
         error
       );
 
@@ -131,7 +158,7 @@ router.post(
 
 /*
 =====================================
-GET FEED
+GET LIVE FEED
 =====================================
 */
 
@@ -142,33 +169,72 @@ router.get(
     res
   ) => {
 
-    const match =
-      activeEvents.find(
-        e =>
-          e.eventId ===
-          req.params.matchId
+    try {
+
+      const match =
+        activeEvents.find(
+          e =>
+            e.eventId ===
+            req.params.matchId
+        );
+
+      /*
+      =====================================
+      MATCH NOT FOUND
+      =====================================
+      */
+
+      if (!match) {
+
+        return res
+          .status(404)
+          .json({
+            error:
+              "Match not found"
+          });
+      }
+
+      /*
+      =====================================
+      RETURN LIVE DATA
+      =====================================
+      */
+
+      res.json({
+
+        status:
+          match.status,
+
+        simulating:
+          match.simulating || false,
+
+        currentRound:
+          match.currentRound || 1,
+
+        playerCount:
+          match.players?.length || 0,
+
+        feed:
+          match.feed || [],
+
+        results:
+          match.results || []
+      });
+
+    } catch (error) {
+
+      console.error(
+        "FEED ROUTE ERROR:",
+        error
       );
 
-    if (!match) {
-
-      return res
-        .status(404)
+      res
+        .status(500)
         .json({
           error:
-            "Match not found"
+            error.message
         });
     }
-
-    res.json({
-      status:
-        match.status,
-
-      feed:
-        match.feed || [],
-
-      results:
-        match.results || []
-    });
   }
 );
 
